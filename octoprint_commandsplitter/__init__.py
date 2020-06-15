@@ -1,49 +1,39 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
+def process_line(line):
+	if b':' not in line:
+		# no :, bail
+		return line
 
-import octoprint.plugin
+	# extract comments
+	comment = b''
+	if b';' in line:
+		line, comment = line.split(b';', maxsplit=1)
+		if line == b'' and len(comment):
+			# comment is the only thing on the line, bail
+			return comment + b'\n'
 
-class CommandSplitterStream(octoprint.filemanager.util.LineProcessorStream):
+	result = b''
+	for l in line.split(b':'):
+		result += l.lstrip()
+		if l.endswith(b'\\'):
+			# escaped :, add back
+			result += b':'
+		else:
+			result = result.rstrip() + b'\n'
 
-	comment_split_re = re.compile(b"(?<!\\\\);")
-	command_split_re = re.compile(b"(?<!\\\\):")
+	if comment:
+		result = result[:-1] + b' ;' + comment
 
-	def process_line(self, line):
-		line, comment = self.split_comment(line.strip())
-		if line == b"" and len(comment):
-			return comment + b"\n"
-
-		lines = self.split_line(line)
-		if len(lines) == 0:
-			return None
-
-		return b"\n".join(filter(lambda x: x is not None and x != b"", lines)) + comment + b"\n"
-
-	def split_comment(self, line):
-		if line.startswith(b";"):
-			return b"", line
-
-		if not b";" in line:
-			return line, b""
-
-		line, comment = self.__class__.comment_split_re.split(line, maxsplit=1)
-		if comment != b"":
-			comment = b";" + comment
-
-		return line, comment
-
-	def split_line(self, line):
-		if line == b"":
-			return []
-
-		if not b":" in line:
-			return [line]
-
-		return map(lambda x: x.strip(), self.__class__.command_split_re.split(line.strip()))
+	return result.rstrip() + b'\n'
 
 def split_all_commands(path, file_object, links=None, printer_profile=None, allow_overwrite=True, *args, **kwargs):
+	import octoprint
+	class CommandSplitterStream(octoprint.filemanager.util.LineProcessorStream):
+		def process_line(self, line):
+			return process_line(line)
+
 	if not octoprint.filemanager.valid_file_type(path, type="gcode"):
 		return file_object
 
