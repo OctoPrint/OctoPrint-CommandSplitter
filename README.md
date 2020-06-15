@@ -18,7 +18,7 @@ If an uploaded GCODE file contains these lines:
 this plugin will turn them into these lines:
 
     G28 X0 Y0
-    G28 Z0; home all axes
+    G28 Z0 ; home all axes
     ; this is a comment with a colon in the middle
     M117 Hello there \:)
 
