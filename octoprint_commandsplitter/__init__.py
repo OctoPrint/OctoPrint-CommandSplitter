@@ -13,7 +13,7 @@ class CommandSplitterStream(octoprint.filemanager.util.LineProcessorStream):
 		# extract comments
 		comment = b''
 		if b';' in line:
-			line, comment = line.split(b';', maxsplit=1)
+			line, comment = line.split(b';', 1)
 			if line == b'' and len(comment):
 				# comment is the only thing on the line, bail
 				return b';' + comment.rstrip() + b'\n'
